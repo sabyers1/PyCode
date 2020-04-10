@@ -21,5 +21,8 @@ myline = numpy.linspace(1, 22, 100)
 
 plt.scatter(x,y)
 plt.plot(myline, mymodel(myline))
+plt.title("Covid Growth")
+plt.xlabel("Time")
+plt.ylabel("Cases/Day")
 plt.show()
 print("The R2 fit score is {}".format(r2_score(y,mymodel(x))))
