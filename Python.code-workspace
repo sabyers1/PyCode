@@ -1,0 +1,10 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"python.linting.pylintPath": "/library/frameworks/Python.framework/Versions/3.8/bin/pylint"
+	}
+}
