@@ -1,4 +1,5 @@
 #luggi Tutorial exercise
+""" Tutorial exercise for python functions and dicionaries. """
 
 sample = [
     {'name': 'Peach', 'items': ['green shell', 'banana', 'green shell',], 'finish': 3},
@@ -41,8 +42,10 @@ def best_items(racers):
                  )
     return winner_item_counts
 
-winner_counts = best_items(sample)
-print(winner_counts)
-winner_counts = best_items(full_dataset)
-print(winner_counts)
-#print(racers[2]['name'])
+
+print("Scanning Sample Dataset:")
+print("The items and count: \n" + 
+', '.join(["'{}' Cnt: {} ".format(v.capitalize(),a) for v,a in best_items(sample).items()]))
+print("\nScanning Full Dataset")
+print("The items and count: \n" + 
+', '.join(["'{}' Cnt: {} ".format(v.capitalize(),a) for v,a in best_items(full_dataset).items()]))
