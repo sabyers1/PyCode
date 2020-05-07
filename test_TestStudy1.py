@@ -25,7 +25,7 @@ class TestCalc(unittest.TestCase):
         self.assertEqual(TestStudy1.divide(3,2),1.5)
         self.assertRaises(ValueError, TestStudy1.divide,10,0)
 
-        #using context manager to capature assertions
+        #using context manager to capture assertions
         with self.assertRaises(ValueError):
             TestStudy1.divide(10,0)
 
