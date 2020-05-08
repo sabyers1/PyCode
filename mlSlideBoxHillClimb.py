@@ -12,6 +12,8 @@ Modified By: Stephen Byers
 -----
 Copyright 2020
 '''
+import copy
+
 dbugFlag = False
 
 if dbugFlag:
@@ -171,8 +173,9 @@ if __name__ == "__main__":
     L = [ss]
     Ls = []
     LsSigs = []
-    maxLoops = 100
-    for nTB in L:
+    maxLoops = 11
+    for xTB in L:
+        nTB=copy.deepcopy(xTB)
         if TileBox_Compare(nTB) == 0:
             print("Found final state!")
             break
@@ -183,11 +186,13 @@ if __name__ == "__main__":
 
         #Build search options, the four possible slide movement directions
         for d in {'up','dn','rt','lf'}:
-            tTB = nTB         #save signature & state before slide
+            tTB = copy.deepcopy(nTB)         #save signature & state before slide
             if tTB.slide(d):  #if valid slide add to state check.
                 if not tTB.signature in LsSigs:  #Discard signature already in Lseen
                     L.insert(0,tTB)
 
+        if len(L)>4 and len(L) < 10:
+            print("List {}".format(L))
         #sort options and place at beginning of List.  We want options with smallest
         #comparision value, so it is a reverse sort.
         L.sort(key = TileBox_Compare, reverse=True)
@@ -195,11 +200,21 @@ if __name__ == "__main__":
 
         #transfer evaluated item into Lseen and remove from L
         Ls.insert(0,nTB)
-        L.remove(nTB)
+        try:
+            L.remove(nTB)
+        except:
+            pass
         if len(L)==0:
             print("ERROR**No further options avaiable")
             nTB.show()
             break
+        maxLoops -= 1
+        if maxLoops < 0:
+            break
+
+    print("List is length {}, List,seen is length {}".format(len(L),len(Ls)))
+    for v in Ls[:10]:
+        v.show()
 
 #     ss.swap('rt',1)
 #     ss.show()
