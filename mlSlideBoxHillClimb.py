@@ -53,6 +53,7 @@ class TileBox (object):
     def __init__(self, object):
         self.mTB = object
         self.mloc = -1
+        self.mdiff = 72     # largest difference value
 
         #iterate through matrix to find zero location
         for i in range (len(self.mTB)):
@@ -81,6 +82,10 @@ class TileBox (object):
         self.signature += 10 * self.mTB[2][1]
         self.signature += self.mTB[2][2]
         return self.signature
+
+    def calc_diff(self):
+        self.mdiff = TileBoxes_Compare(self)
+        return self.mdiff
 
     def swap(self,dir,loc):
         if (0 < loc & loc < 10) & self.valid_slide(dir,loc):
@@ -147,11 +152,41 @@ def TileBox_Compare(tb1, tb2):
         for j in range(len(tb1.mTB[0])):
             rTB.mTB[i][j] = tb1.mTB[i][j] - tb2.mTB[i][j]
             sum += abs(rTB.mTB[i][j])
-
+    rTB.mdiff=sum
     return sum
 
 def TileBoxes_Compare(tb1):
-    return TileBox_Compare(tb1,fs)
+    #return TileBox_Compare(tb1,fs)
+    return TileBox_Moves(tb1)
+
+# Total number of moves tiles will have to slide to match the final state
+#  x   y   
+#  i   j   v
+#  0   0   1
+#  0   1   2
+#  0   2   3
+#  1   0   8
+#  1   1   0
+#  1   2   4
+#  2   0   7
+#  2   1   6
+#  2   2   5               
+
+def TileBox_Moves(tb1):
+    fsx = {1:0,2:0,3:0,8:1,0:1,4:1,7:2,6:2,5:2}
+    fsy = {1:0,2:1,3:2,8:0,0:1,4:2,7:0,6:1,5:2}
+
+    #print("Start move calc:")
+    sum = 0
+    for i in range(len(tb1.mTB)):
+        for j in range(len(tb1.mTB[0])):
+            if tb1.mTB[i][j] != fs.mTB[i][j] : # Check if must move
+                if tb1.mTB[i][j] != 0:
+                    d1 = abs(fsx[tb1.mTB[i][j]]-i)
+                    d2 = abs(fsy[tb1.mTB[i][j]]-j)
+                    sum += d1 + d2
+                    #print("{}: {:02d} {:02d}".format(tb1.mTB[i][j],d1,d2))
+    return sum           
 
 # Hill-climbing search algorithm
 # 1. Create two lists, L and Lseen.
@@ -163,9 +198,16 @@ def TileBoxes_Compare(tb1):
 #    Evaluation function and place them at the front of L.
 # 4. Transfer n from L into the list, Lseen, of the states that have been investigated.
 # 5. If L is empty, stop and report failure, otherwise loop to step 2.
-        
-#fs = TileBox([[1,2,3],[8,0,4],[7,6,5]])  # final state of matrix
-#ss = TileBox([[0,2,1],[6,7,4],[3,8,5]])  # starting state of matrix
+
+fs = TileBox([[1,2,3],[8,0,4],[7,6,5]])  # final state of matrix
+ss = TileBox([[0,2,1],[6,7,4],[3,8,5]])  # starting state of matrix        
+ts = TileBox([[2,1,4],[6,0,7],[3,8,5]])  # starting state of matrix        
+
+# print("Moves:  0 {:02d}".format(TileBox_Moves(fs)))
+# print("Moves: 12 {:02d}".format(TileBox_Moves(ss)))
+# print("Moves: 14 {:02d}".format(TileBox_Moves(ts)))
+
+import sys
 
 if __name__ == "__main__":
     fs = TileBox([[1,2,3],[8,0,4],[7,6,5]])  # final state of matrix
@@ -178,7 +220,10 @@ if __name__ == "__main__":
     L = [ss]                # create L list and initalize with random starting state
     Ls = []                 # create Lseen list
     LsSigs = []             # list of state signatures for faster comparision
-    maxLoops = 10000          # limit number of iterations
+    maxLoops = 100000          # limit number of iterations
+    if len(sys.argv)>1:
+        maxLoops = int(sys.argv[1])
+    print("Max Loops set to: {}".format(maxLoops))
     while (len(L)>0):       # verify still have states to evaluate
         for nTB in tuple(L):  #get first element, n, of L list (tuple so list doesn't grow during iteration)
 
@@ -199,6 +244,7 @@ if __name__ == "__main__":
                     tTB = copy.deepcopy(nTB)         #save signature & state before slide
                     if tTB.slide(d):  #if valid slide add to state check.
                         if not tTB.signature in LsSigs:  #Discard signature already in Lseen
+                            tTB.calc_diff()
                             addList.append(tTB)
 
                 #if len(L)>4 and len(L) < 10:
@@ -207,9 +253,15 @@ if __name__ == "__main__":
                 #sort options and place at beginning of List.  We want options with smallest
                 #comparision value, so it is a reverse sort.
                 if len(addList) > 0:
-                    addList.sort(key = TileBoxes_Compare) # lowest is best, so keep in high-low order
+                    addList.sort(key = TileBoxes_Compare,reverse=True) # lowest is best, so keep in high-low order
                     for i in range(len(addList)):   # this loop reverses the sort order (reverse=True)
                         L.insert(0,addList[i])
+
+                    if dbugFlag:
+                        print("addList: {}".format([x.signature for x in addList]))
+                        print("L:  {}".format([(x.signature, x.mdiff) for x in L ]))
+                        print("Ls: {}".format([(x.signature, x.mdiff) for x in Ls ]))
+
                 del addList
 
                 #transfer evaluated item into Lseen and remove from L
@@ -217,19 +269,22 @@ if __name__ == "__main__":
                 Ls.append(nTB)
                 maxLoops -= 1
                 
+                if dbugFlag:
+                    print("L:  {}".format([(x.signature, x.mdiff) for x in L ]))
+                    print("Ls: {}".format([(x.signature, x.mdiff) for x in Ls ]))
+
                 if len(L)==0:
                     print("\nERROR** No further options avaiable")
                     nTB.show()
                     break
                 maxLoops -= 1
                 if maxLoops%100 == 0:
-                    print(".", end="")
+                    print(".", end="",flush=True)
 
         if maxLoops < 0:
             print("\nERROR** Exceeded maximum loops!")
             print("List size: {} Evaluated size {}\n".format(len(L),len(Ls)))
-            #print("L[0:4]  {}".format(L[0:4]))
-            #print("Ls[0:4] {}".format(Ls[0:4])) 
+
             for t in L[0:4]:
                 t.show()
             print("----L seen------")
