@@ -55,7 +55,7 @@ class Tiles():
 
     def slide(self,key):
         left,top,right,down = self.getTileAroundGap()
-        print("Tiles::slide w key: {}".format(key))
+        #print("Tiles::slide w key: {}".format(key))
         if key == 'Up':
             self.changeGap(down)
         if key == 'Down':
@@ -64,7 +64,32 @@ class Tiles():
             self.changeGap(left)
         if key == 'Left':
             self.changeGap(right)
+        #if key != 'Up' and key!='Down'and key!='Right' and key!='Left':
+        #    print("UFO key: {}".format(key))
         self.show()
+
+    def mSlide(self,event):
+        #idx = event.x*self.grid + event.y
+        #print("Tiles::mSlide @{},{} index: {}".format(event.x,event.y,idx))
+        left,top,right,down = self.getTileAroundGap()
+        #print("D:{} T:{} R:{} L:{}".format(down,top,right,left))
+        if down != None:
+            if down.pos[0]==event.x and down.pos[1]==event.y:
+                self.changeGap(down)
+        #        print("ChangeGap(down)")
+        if top != None:
+            if top.pos[0]==event.x and top.pos[1]==event.y:
+                self.changeGap(top)
+        #        print("ChangeGap(top)")
+        if right != None:
+            if right.pos[0]==event.x and right.pos[1]==event.y:
+                self.changeGap(right)
+        #        print("ChangeGap(right)")
+        if left != None:
+            if left.pos[0]==event.x and left.pos[1]==event.y:
+                self.changeGap(left)
+        #        print("ChangeGap(left)")
+        self.show()      
 
     def shuffle(self):
         random.shuffle(self.tiles)
@@ -76,7 +101,7 @@ class Tiles():
         
     def show(self):
         for tile in self.tiles:
-            if self.gap != tile:
+            if self.gap != tile:  #show all tiles except the 'gap' tile.
                 tile.show()
         
     def setGap(self,index):
@@ -95,12 +120,22 @@ class Tile(Label):
         self.image = image
         self.pos = pos
         self.curPos = pos
+        self.bind('<Button-1>',self.mouseClick)
 
     def show(self):
         self.grid(row=self.pos[0],column = self.pos[1])
 
     def isCorrectPos(self):
         return self.pos == self.curPos
+
+    def default_empty_handler(self,event):
+        #print("Tile::default mClick tile:{},{} @ {},{}".format(self.pos[0],self.pos[1],event.x,event.y))
+        pass
+
+    def mouseClick(self,event):  # This function address is bound to the tile, so redirect at default_handler
+        event.x = self.pos[0]  #Change from mouse position to current tile position.
+        event.y = self.pos[1]  
+        self.default_empty_handler(event)
 
 class Board(Frame):
     MAX_BOARD_SIZE = 500
@@ -120,9 +155,6 @@ class Board(Frame):
 
    
     def openImage(self,image):
-        #image = Image.open(image)
-        #sImageName = image.get()        #TkImage requires string not StrVar???
-        #print("openImage file: {}".format(sImageName))
         image = Image.open(image)
         #print("image size: {} x {}".format(image.size[0],image.size[1]))
         if min(image.size) > self.MAX_BOARD_SIZE:
@@ -136,7 +168,7 @@ class Board(Frame):
         self.bind_all('<Key-Down>',self.slide)
         self.bind_all('<Key-Right>',self.slide)
         self.bind_all('<Key-Left>',self.slide)
-        self.bind_all('<Button-1>',self.slide)
+       
 
     def slide(self,event):
         self.tiles.slide(event.keysym)
@@ -154,6 +186,7 @@ class Board(Frame):
                 y1 = y0 + self.tileSize
                 tileImage = ImageTk.PhotoImage(self.image.crop((x0,y0,x1,y1)))
                 tile = Tile(self,tileImage,(row,col))
+                tile.default_empty_handler = tiles.mSlide  # redirect tile mouse click handler to parent's mSlide method
                 tiles.add(tile)
         tiles.setGap(-1)  # gap is last tile in tile list
         return tiles
