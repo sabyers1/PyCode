@@ -16,9 +16,9 @@ soup = BeautifulSoup(c)
 #find the location element on the webpage
 main_content = soup.find('td', attrs = {'width':'169'})
 content = main_content.find
-#page = r.text
+page = r.text
 #Finds all the url's inside of hyperlinks places them in an array
-#urls = re.findall('href=[\'"]?([^\'" >]+)',page)
+urls = re.findall('href=[\'"]?([^\'" >]+)',page)
 
 
 
