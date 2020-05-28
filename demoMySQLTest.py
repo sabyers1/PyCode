@@ -7,21 +7,19 @@ import mysql.connector
 import sys
 import os
 
-# Try to connect to MySQL server
+# Try to connect to MySQL server w/o database in case it must be created.
 try:
     mydb = mysql.connector.connect(
         host="localhost",
         user="root",
-        passwd="root",
-        database="mydatabase"
+        passwd="root"
+        #,database="mydatabase"
     )
 except:
     print("Did not connect to MySQL server.\nTrying to start MySQL server.")
     #os.system('sudo /etc/init.d/mysql start')
     print ("Exiting program...")
     sys.exit()  #Server not running or account not setup.
-
-#print(mydb) # An esoteric string showing that connected.
 
 # Check if database exists
 mycursor = mydb.cursor(buffered=True)  #if don't state that buffer get results not read error when deleting.
@@ -36,6 +34,9 @@ for x in mycursor:
 if not foundDB:
     print ("Creating 'mydatabase' on MySQL server")
     mycursor.execute("CREATE DATABASE mydatabase")
+else:
+    print("Found 'mydatabase' on MySQL server.")
+mycursor.execute("USE mydatabase")
 
 def checkTableExists(dbcon, tablename):
     """ Method looks to see if a table exists in a database connection """
@@ -61,8 +62,14 @@ print("Tables:")
 for x in mycursor:
     print(x[0])
 
-sql = "INSERT INTO customers (name, address) VALUES (%s, %s)"
-val = [
+# Check if data in table?
+sqlCnt = "SELECT COUNT(*) FROM customers"
+mycursor.execute(sqlCnt)
+myresults = mycursor.fetchone()
+if myresults[0] == 0:       # returns tuple with row count as first element
+    #insert data if needed
+    sql = "INSERT INTO customers (name, address) VALUES (%s, %s)"
+    val = [
     ('James Caan', '14 Highway 101, Long Beach CA'),
     ('Sandra Bullock', '45 Ventura Blvd, Hollywood, CA'),
     ('James Dean', '1 Deadsville, Death Valley, CA'),
@@ -73,24 +80,23 @@ val = [
     ("Chuck Strong", "563 Woholo St, Jupiter, KS"),
     ("Viola Black", "234 Rush St, New Orleans, LA")
     ]
-
-mycursor.executemany(sql,val)
-mydb.commit()
-print(mycursor.rowcount,"Record(s) inserted, last ID: {}".format(mycursor.lastrowid))
+    mycursor.executemany(sql,val)
+    mydb.commit()
+    print(mycursor.rowcount,"Record(s) inserted, last ID: {}".format(mycursor.lastrowid))
 
 #mycursor.execute("SELECT name, address FROM customers")
 mycursor.execute("SELECT * FROM customers")
 myresults = mycursor.fetchall()
 print("Customer list:")
 for x in myresults:
-    print(x)
+    print("{:3} {:20} {}".format(x[0],x[1],x[2]))
 
 mycursor.execute("SELECT name, address FROM customers WHERE address like '%CA'")
 myresults = mycursor.fetchone()
 print("First one from CA is: ",myresults[0])
 
 #clean up getting rid of table and database.
-print("Do you wish to remove database (y/n)?")
+print("\nDo you wish to remove database (y/n)?",end="")
 a = input()
 if a.lower() == 'y':
     try:
