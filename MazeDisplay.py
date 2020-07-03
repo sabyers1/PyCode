@@ -116,12 +116,17 @@ class Seeker:
             if not self.maze.m[0][i].getWall():
                 cCol = i
                 self.maze.m[0][i].visit()
-        
+        #self.maze.m[0][cCol]
+
         #loop until out of maze bottom
         h = self.maze.getRows()
         cRow = 0
+        pr,pc = cRow, cCol
         while(cRow+1<h):
-            cRow,cCol = calcNextMove(cRow,cCol)
+            cRow,cCol = self.calcNextMove(cRow,cCol)
+            if pr==cRow and pc==cCol:
+                cRow = h #exit loop
+            pr,pc = cRow,cCol
 
     def calcNextMove(self,r,c):
         if r+1 < self.maze.getRows():
@@ -135,12 +140,12 @@ class Seeker:
                 c -= 1
                 return r,c
         if r-1 > -1:
-            if self.maze.m[r-1][c].getWall()==0 and self.maze.mw[r][c+1].getWall()!=0: # Up, not right avail, not on top edge
-                self.maze.m[r][c].visit
+            if self.maze.m[r-1][c].getWall()==0 and self.maze.m[r][c+1].getWall()!=0: # Up, not right avail, not on top edge
+                self.maze.m[r][c].visit()
                 return r,c
         if c+1 < self.maze.getCols():
             if self.maze.m[r][c+1].getWall() == 0: # Right, not on right edge
-                self.maze.m[r][c].visit
+                self.maze.m[r][c].visit()
                 c += 1
                 return r,c
         return r,c 
@@ -206,12 +211,14 @@ class MazeFrame(Frame):
         self.mazeFrame.pack()
         # osx uses highlightbackground for button rather than bg option!
         #self.but=Button(self, text='Solve',command=self.mainf.restart,bd=10,highlightbackground='SlateGray3',width=20).pack(side='right',pady=5,padx=5) # place button below maze matrix
-        self.but=Button(self, text='Solve',command=self.solve,bd=10,highlightbackground='SlateGray3',width=20).pack(side='right',pady=5,padx=5) # place button below maze matrix
+        self.but=Button(self, text='Solve',command=self.solve,bd=10,highlightbackground='SlateGray3',width=20) # place button below maze matrix
+        self.but.pack(side='right',pady=5,padx=5)
         #self.bindKeys()
 
     def solve(self):
         self.seekr = Seeker(self.maze)
-        self.but.config(text='Restart', command=self.mainf.restart)
+        self.tiles.show()
+        self.but.configure(text='Restart', command=self.mainf.restart)
 
     def createTiles(self):
         rows = self.maze.getRows()
