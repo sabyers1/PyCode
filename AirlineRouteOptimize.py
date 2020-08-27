@@ -5,6 +5,9 @@
 airports = ["BGI","CDG","DEL","DOH","DSM","EWR","EYW","HND","ICN",
     "JFK","LGA", "LHR", "ORD","SAN","SFO","SIN","TLV","BUD"]
 
+#mp = {0:"BGI",1:"CDG",2:"DEL",3:"DOH",4:"DSM",5:"EWR",6:"EYW",7:"HND",8:"ICN",
+#    9:"JFK",10:"LGA", 11:"LHR", 12:"ORD",13:"SAN",14:"SFO",15:"SIN",16:"TLV",17:"BUD"}
+
 routes = [ # existing one-way routes from departure to arrival
     ["DSM","ORD"],
     ["ORD","BGI"],
@@ -44,70 +47,103 @@ startingAirport = "LGA"
 # for edge (u,v) if who[u]!=who[v]: ++deg(who[v]):
 
 #find number of ndegree=0 which are not S (start point) in compressed graph
-#count number of u such that who[u]==u and deg[u]==0 and u==who[S]
+#count number of u such that who[u]==u and deg[u]==0 and u!=who[S]
  
-const int mxN = 1e5;
-vector<int> adj[mxN], reverseAdj[mxN], st; #a stack 
-int who[mxN], deg[mxN];
-Bool visited[mxN], vis2[mxN];
+mxN = 100000
+adj=[[] for i in range(mxN)]
+reverseAdj=[[] for i in range(mxN)]
+st = [] # stack
+who=[0 for i in range(mxN)]
+deg=[0 for i in range(mxN)]
+vis=[False for i in range(mxN)]
+vis2=[False for i in range(mxN)]
 
-void dfs1(int u){
+def dfs1(u): # Depth First Search 1
     vis[u] = True
-    for (int v : adj[u])
-        if(!visited[v])
-            dfs1(v);
-    st.push_back(u);
-}
+    print("Visit1: [{:2}] at {}".format(u,airports[u]))
+    for v in adj[u]:
+        if not vis[v]:
+            dfs1(v)
+    st.append(u)
 
-void dfs2(int u, int rep){
+def dfs2(u, rep): # Depth First Search 2
     vis2[u] = True
     who[u] = rep
-    for (int v : reverseAdj[u]) # why using reverse wasn't clear but it's part of Korasaju's algo
-        if(!vis[v])
+    print("Visit2: [{:2}] at {} Rep by: [{:2}]".format(u,airports[u],rep))
+    for v in reverseAdj[u]: # why using reverse wasn't clear but it's part of Korasaju's algo
+        if not vis2[v]:
             dfs2(v,rep)
-}
 
- int solve (vector<string> airports, vector<vector<string>> routes, string startingAirport){
-     int n=airports.size();
-     map<string,int> mp; #could be an unordered map for less complexity
-     # O(n)
-     for(int i=0; i<n; i++){
-         mp[airports[i]]=i;
-     }
+def solve (airports, routes, startingAirport):
+    n=len(airports)
+    mp = {}
+    for i in range(n):
+        mp.update({airports[i] : i})
+        print("{} idx: [{:2}]".format(airports[i],i))
+
     # O(m)
-     for(vector<string> edge: routes){
-         adj[mp[e[0]]].push_back(mp[e[1]]);  # store the id in the adjacency list
-     }
+    for e in routes:
+        print("{} {:2} adj to {} {:2}".format(e[0],mp[e[0]],e[1],mp[e[1]]))
+        #adj[mp[e[0]]].append(mp[e[1]]) # store the id in the adjacency list
+        adj[mp[e[0]]].insert(0,mp[e[1]]) # store the id in the adjacency list
 
     #O(n+m)
-    for(int i=0; i<n; i++){
-        for(int j : adj[i])
-            reverseAdj[j].push_back(i)
-    #O(n+m)
-    for(int i=0; i<n; i++)
-        if(!visited[i])
-            dfs1(1);
-    }
+    for i in range(n):
+        for j in adj[i]:
+            #reverseAdj[j].append(i)
+            reverseAdj[j].insert(0,i)
+            print("R {} from {}".format(routes[i][1],routes[i][0]))
+    #print(reverseAdj)
 
     #O(n+m)
-    while(st.size()>0){
-        int u=st.top();
-        st.pop();
-        if(!vis2[u])
-            dfs2(u)
-    }
+    for i in range(n):
+        if not vis[i]:
+            dfs1(i)
+
     #O(n+m)
-    for(int i=0; i<n; i++)
-        for (int j : adj[i])
-            if(who[i]!=who[j])
-                ++deg[who[j]];
+    while len(st)>0:
+        u=st.pop()
+        if not vis2[u]:
+            dfs2(u,u)
+
+    #O(n+m)
+    for i in range(n):
+        for j in adj[i]:
+            if who[i]!=who[j]:
+                deg[who[j]]+= 1
+                print("[{:2}] has degree: {}".format(who[j],deg[who[j]]))
 
     #O(n)
-    int ans=0;
-    for(inti=0; i<n; i++){ #interating through original graph, but only want to  iter in compressed graph
-        if(who[i]==i&&deg[i]==0&&i==who[mp[startingAirport]])
-            ans++
-    }
-    return ans;
+    ans=0
+    for i in range(n): #interating through original graph, but only want to  iter in compressed graph
+        if who[i]==i and deg[i]==0 and i!=who[mp[startingAirport]]:
+            ans += 1
+            print("Zero degree at: [{:2}] add route to [{:2}]".format(i,airports[i]))
+            routes.append([startingAirport,airports[i]])
+    return ans
 
- }
+
+if __name__ == "__main__":
+    ans = solve(airports,routes,startingAirport)
+    print("The number of additional routes needed to access all airports is: {}".format(ans))
+
+
+    # Visualize the airport network
+    # libraries
+    import pandas as pd 
+    import numpy as np 
+    import networkx as nx 
+    import matplotlib.pyplot as plt
+
+    # Build directed graph via edge connections
+    H = nx.DiGraph()
+    for e in routes:
+        H.add_edge(e[0],e[1])
+
+    # Plot it
+    pos = nx.spring_layout(H,k=0.3,iterations=30)
+    plt.figure(1,figsize=(8,10))
+    nx.draw(H,pos=pos,with_labels=True)
+    #plt.savefig("AirlineRouteOpt.png")    
+    plt.suptitle('Airline Routes', fontsize=16)
+    plt.show()
